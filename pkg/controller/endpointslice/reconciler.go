@@ -252,7 +252,14 @@ func (r *reconciler) finalize(
 		if sliceToDelete.AddressType == slice.AddressType && ownedBy(sliceToDelete, service) {
 			slice.Name = sliceToDelete.Name
 			slicesToCreate = slicesToCreate[:len(slicesToCreate)-1]
-			slicesToUpdate = append(slicesToUpdate, slice)
+
+			// we must consider the situation that an empty unchanged endpointslice no need to update.
+			// eg: if there are many headless svc with single stack ipv4 for example, a lot of ipv6 empty
+			//     endpointslice update could be avoid.
+			if len(slice.Endpoints) != 0 || len(sliceToDelete.Endpoints) != 0 {
+				slicesToUpdate = append(slicesToUpdate, slice)
+			}
+
 			slicesToDelete = append(slicesToDelete[:i], slicesToDelete[i+1:]...)
 		} else {
 			i++
